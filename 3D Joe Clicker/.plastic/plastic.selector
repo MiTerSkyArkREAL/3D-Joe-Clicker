@@ -1,0 +1,4 @@
+repository "3D Joe Clicker/3D Joe Clicker@2475252910566@cloud"
+  path "/"
+    br "/main"
+    co "/main"
