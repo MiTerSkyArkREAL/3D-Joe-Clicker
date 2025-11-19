@@ -5,6 +5,7 @@ public class PlayerCam : MonoBehaviour
 {
     [SerializeField]
     private float sensX = 30;
+    [SerializeField]
     private float sensY = 30;
 
     [SerializeField]
