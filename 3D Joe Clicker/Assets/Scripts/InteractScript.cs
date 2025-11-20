@@ -1,6 +1,7 @@
 //TODO:
-//Make worker move up, finish hiring system
-//Hiring manager that hires workers
+//Parkour course; prize triples current amount of money
+//Upgrade that lowers cost scaler
+//Outside the walls are lemon monsters. The player can buy weapons/gear to kill them. Each kill doubles money and gives a high quality lemon
 using UnityEngine;
 using TMPro;
 
@@ -16,6 +17,7 @@ public class InteractionScript : MonoBehaviour
    public Transform Lemon;
    public Transform JobApp;
    public Transform Worker;
+   public Transform HManApp;
 
    public float costScaler = 1.2f;
 
@@ -25,12 +27,16 @@ public class InteractionScript : MonoBehaviour
    public TMP_Text WallCostText;
    public TMP_Text HighQualLemonText;
    public TMP_Text WorkerText;
+   public TMP_Text HireManText;
 
    public bool wallBought = false;
    public float highQualLems = 0f;
    public float HighQualLemCost = 15f;
    public float Workers = 0f;
    public float WorkerCost = 500f;
+   public float WorkerMult = 1f;
+   public float HireMans = 0f;
+   public float HireManCost = 6000;
 
 
 
@@ -41,8 +47,16 @@ public class InteractionScript : MonoBehaviour
    void Update()
    {
     MoneyText.text = "Money: $" + Money.ToString("F2");
+    WorkerText.text = "Hire Worker ($" + WorkerCost + ")" + "\n" + "[E]" + "\n" + Workers + ", " + WorkerMult;
         if(Workers > 0){
-            Money += Workers * Time.deltaTime;
+            if(highQualLems > 2){
+                Money += Workers * WorkerMult * (highQualLems - 2) * Time.deltaTime;
+            }else{
+                Money += Workers * WorkerMult * Time.deltaTime;
+            }
+        }
+        if(HireMans > 0){
+                Workers += HireMans * WorkerMult * Time.deltaTime;
         }
 
        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
@@ -69,8 +83,12 @@ public class InteractionScript : MonoBehaviour
                 jumpForce = 4f;
                 WallCostText.text = "Jump Higher";
                 wallBought = true;
+                for(int i = 2; i > 0; i--){
+                Wall.position += Vector3.down; 
+                }
             }
-        }
+            }
+    
 
         if (PlayerObject != null && Lemon != null)
         {
@@ -88,7 +106,17 @@ public class InteractionScript : MonoBehaviour
             if(distance < 3.6 && Input.GetKeyDown(KeyCode.E) && Money >= WorkerCost){
                 hireWorker();
                 MoneyText.text = "Money: $" + Money.ToString("F2");
-                WorkerText.text = "Hire Worker ($" + WorkerCost + ")" + "\n" + "[E]" + "\n" + Workers;
+                WorkerText.text = "Hire Worker ($" + WorkerCost + ")" + "\n" + "[E]" + "\n" + Workers + ", " + WorkerMult;
+            }
+        }
+
+        if (PlayerObject != null && HManApp != null)
+        {
+            float distance = Vector3.Distance(PlayerObject.position, HManApp.position);
+            if(distance < 3.6 && Input.GetKeyDown(KeyCode.E) && Money >= HireManCost){
+                hireManagerBuy();
+                MoneyText.text = "Money: $" + Money.ToString("F2");
+                HireManText.text = "Hire Hiring Manager ($" + HireManCost + ")" + "\n" + "[E]" + "\n" + HireMans;
             }
         }
    }
@@ -100,13 +128,22 @@ public class InteractionScript : MonoBehaviour
 
     public void hireWorker(){
         Money = Money - WorkerCost;
-        Workers++;
+        WorkerMult++;
+        if(HireMans < 1){
+            Workers++;
+        }
         WorkerCost = WorkerCost * costScaler;
         if(Workers < 2){
-            for(int i = 2; i > 0; i--)
+            for(int i = 3; i > 0; i--)
                 Worker.position += Vector3.up; 
             }
-        }
+    }
+
+    public void hireManagerBuy(){
+        Money = Money - HireManCost;
+        HireMans++;
+        HireManCost = HireManCost * costScaler;
+    }
     
    void OnCollisionEnter(Collision collision)
    {
