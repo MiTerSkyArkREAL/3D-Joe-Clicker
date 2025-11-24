@@ -1,16 +1,21 @@
 //TODO:
 //Parkour course; prize triples current amount of money
 //Upgrade that lowers cost scaler
-//Outside the walls are lemon monsters. The player can buy weapons/gear to kill them. Each kill doubles money and gives a high quality lemon
-//Secret wall opens only on tuesdays. A secret wall within the secret room only opens on mondays.
 //Add saving when exiting
+//Anvil that generates hiring managers
 using UnityEngine;
+using Unity;
 using System;
 using TMPro;
 
 [RequireComponent(typeof(Rigidbody))]
 public class InteractionScript : MonoBehaviour
 {
+
+    [SerializeField] private AudioClip BassSound;
+
+    private AudioSource audioSource;
+
     public float jumpForce = 2f;
     private bool isGrounded = true;
     private Rigidbody rb;
@@ -22,6 +27,11 @@ public class InteractionScript : MonoBehaviour
     public Transform Worker;
     public Transform HManApp;
     public Transform SecretWall;
+    public Transform SecretWall2;
+    public Transform Gun;
+    public GameObject PlayerGun;
+    public Transform Bass;
+    public Transform Anvil;
 
     public float costScaler = 1.2f;
 
@@ -31,6 +41,7 @@ public class InteractionScript : MonoBehaviour
     public TMP_Text HighQualLemonText;
     public TMP_Text WorkerText;
     public TMP_Text HireManText;
+    public TMP_Text AnvilText;
 
     public bool wallBought = false;
     public float highQualLems = 0f;
@@ -39,25 +50,55 @@ public class InteractionScript : MonoBehaviour
     public float WorkerCost = 500f;
     public float WorkerMult = 1f;
     public float HireMans = 0f;
+    public float HireManMult = 1;
     public float HireManCost = 6000;
+    public float HMForgers = 0;
+    public float HMForgerCost = 500000;
+
+    public bool Secret1Moved = false;
+    public bool Secret2Moved = false;
+
+    public bool gun = false;
 
     DayOfWeek today = DateTime.Now.DayOfWeek;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        PlayerGun.SetActive(false);
 
-        if (DateTime.Now.DayOfWeek == DayOfWeek.Friday)
-        {
-            for (int i = 3; i > 0; i--)
-                SecretWall.position += Vector3.down;
-        }
+        audioSource = GetComponent<AudioSource>();
     }
 
     void Update()
     {
+        if (DateTime.Now.DayOfWeek != DayOfWeek.Sunday){
+            if(!Secret1Moved){
+                Secret1Moved = true;
+            for (int i = 3; i > 0; i--)
+                SecretWall.position += Vector3.down;
+            }
+        }else if(Secret1Moved){
+            Secret1Moved = false;
+            for (int i = 3; i > 0; i--)
+                SecretWall.position += Vector3.up;
+        }
+        if (DateTime.Now.DayOfWeek == DayOfWeek.Tuesday){
+            if(!Secret2Moved){
+                Secret2Moved = true;
+            for (int i = 3; i > 0; i--)
+                SecretWall2.position += Vector3.down;
+            }
+        }else if(Secret2Moved){
+            Secret2Moved = false;
+            for (int i = 3; i > 0; i--)
+                SecretWall2.position += Vector3.up;
+        }
+
         MoneyText.text = "Money: $" + Money.ToString("F2");
         WorkerText.text = "Hire Worker ($" + WorkerCost + ")" + "\n" + "[E]" + "\n" + Workers + ", " + WorkerMult;
+        HireManText.text = "Hire Hiring Manager ($" + HireManCost + ")" + "\n" + "[E]" + "\n" + HireMans + ", " + HireManMult;
+
 
         if (Workers > 0)
         {
@@ -76,10 +117,41 @@ public class InteractionScript : MonoBehaviour
             Workers += HireMans * WorkerMult * 0.25f * Time.deltaTime;
         }
 
+        if (HMForgers > 0)
+        {
+            HireMans += HMForgers * HireManMult * 0.25f * Time.deltaTime;
+        }
+
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             isGrounded = false;
+        }
+
+        if (PlayerObject != null && Bass != null)
+        {
+            float distance = Vector3.Distance(PlayerObject.position, Bass.position);
+            if (distance < 5 && Input.GetKeyDown(KeyCode.E))
+            {
+                if(gun){
+                    Money = Money * 1.005f;
+                }
+
+                audioSource.clip = BassSound; 
+                audioSource.Play();
+            }
+        }
+
+        if (PlayerObject != null && Gun != null)
+        {
+            float distance = Vector3.Distance(PlayerObject.position, Gun.position);
+            if (distance < 5 && Input.GetKeyDown(KeyCode.E))
+            {
+                gun = true;
+                PlayerGun.SetActive(true);
+                for (int i = 3; i > 0; i--)
+                Gun.position += Vector3.down;
+            }
         }
 
         if (PlayerObject != null && Table != null)
@@ -138,7 +210,18 @@ public class InteractionScript : MonoBehaviour
             {
                 hireManagerBuy();
                 MoneyText.text = "Money: $" + Money.ToString("F2");
-                HireManText.text = "Hire Hiring Manager ($" + HireManCost + ")" + "\n" + "[E]" + "\n" + HireMans;
+                HireManText.text = "Hire Hiring Manager ($" + HireManCost + ")" + "\n" + "[E]" + "\n" + HireMans + ", " + HireManMult;
+            }
+        }
+
+        if (PlayerObject != null && Anvil != null)
+        {
+            float distance = Vector3.Distance(PlayerObject.position, Anvil.position);
+            if (distance < 3.6 && Input.GetKeyDown(KeyCode.E) && Money >= HMForgerCost)
+            {
+                HMForgeBuy();
+                MoneyText.text = "Money: $" + Money.ToString("F2");
+                AnvilText.text = "HM Forger ($" + HMForgerCost + ")" + "\n" + "[E]" + "\n" + HMForgers;
             }
         }
     }
@@ -173,7 +256,17 @@ public class InteractionScript : MonoBehaviour
     {
         Money = Money - HireManCost;
         HireMans++;
-        HireManCost = HireManCost * costScaler;
+        HireManCost = HireManCost * 2;
+        if(HireMans > 4){
+            HireManMult++;
+        }
+    }
+
+    public void HMForgeBuy()
+    {
+        Money = Money - HMForgerCost;
+        HMForgers++;
+        HMForgerCost *= 2;
     }
 
     void OnCollisionEnter(Collision collision)
