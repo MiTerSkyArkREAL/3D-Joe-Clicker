@@ -2,7 +2,7 @@
 //Parkour course; prize triples current amount of money
 //Upgrade that lowers cost scaler
 //Add saving when exiting
-//Anvil that generates hiring managers
+//Ascension mechanic; resets money for some sort of multiplier
 using UnityEngine;
 using Unity;
 using System;
@@ -11,11 +11,6 @@ using TMPro;
 [RequireComponent(typeof(Rigidbody))]
 public class InteractionScript : MonoBehaviour
 {
-
-    [SerializeField] private AudioClip BassSound;
-
-    private AudioSource audioSource;
-
     public float jumpForce = 2f;
     private bool isGrounded = true;
     private Rigidbody rb;
@@ -26,12 +21,13 @@ public class InteractionScript : MonoBehaviour
     public Transform JobApp;
     public Transform Worker;
     public Transform HManApp;
-    public Transform SecretWall;
-    public Transform SecretWall2;
+    public GameObject SecretWall;
+    public GameObject SecretWall2;
     public Transform Gun;
     public GameObject PlayerGun;
     public Transform Bass;
     public Transform Anvil;
+    public Transform Paywall;
 
     public float costScaler = 1.2f;
 
@@ -55,8 +51,7 @@ public class InteractionScript : MonoBehaviour
     public float HMForgers = 0;
     public float HMForgerCost = 500000;
 
-    public bool Secret1Moved = false;
-    public bool Secret2Moved = false;
+    public bool paywallBought = false;
 
     public bool gun = false;
 
@@ -66,33 +61,23 @@ public class InteractionScript : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         PlayerGun.SetActive(false);
-
-        audioSource = GetComponent<AudioSource>();
     }
 
     void Update()
     {
-        if (DateTime.Now.DayOfWeek != DayOfWeek.Sunday){
-            if(!Secret1Moved){
-                Secret1Moved = true;
-            for (int i = 3; i > 0; i--)
-                SecretWall.position += Vector3.down;
-            }
-        }else if(Secret1Moved){
-            Secret1Moved = false;
-            for (int i = 3; i > 0; i--)
-                SecretWall.position += Vector3.up;
+        Vector3 pos = PlayerObject.position;
+        today = DateTime.Now.DayOfWeek;
+
+        if(pos.y < -10){
+            PlayerObject.position = new Vector3(0, 5, 0);
         }
-        if (DateTime.Now.DayOfWeek == DayOfWeek.Tuesday){
-            if(!Secret2Moved){
-                Secret2Moved = true;
-            for (int i = 3; i > 0; i--)
-                SecretWall2.position += Vector3.down;
-            }
-        }else if(Secret2Moved){
-            Secret2Moved = false;
-            for (int i = 3; i > 0; i--)
-                SecretWall2.position += Vector3.up;
+
+        if (DateTime.Now.DayOfWeek != DayOfWeek.Sunday){
+            SecretWall.SetActive(false);
+            SecretWall2.SetActive(true);
+        }else{
+            SecretWall.SetActive(true);
+            SecretWall2.SetActive(false);
         }
 
         MoneyText.text = "Money: $" + Money.ToString("F2");
@@ -137,8 +122,6 @@ public class InteractionScript : MonoBehaviour
                     Money = Money * 1.005f;
                 }
 
-                audioSource.clip = BassSound; 
-                audioSource.Play();
             }
         }
 
@@ -222,6 +205,18 @@ public class InteractionScript : MonoBehaviour
                 HMForgeBuy();
                 MoneyText.text = "Money: $" + Money.ToString("F2");
                 AnvilText.text = "HM Forger ($" + HMForgerCost + ")" + "\n" + "[E]" + "\n" + HMForgers;
+            }
+        }
+
+        if (PlayerObject != null && Paywall != null)
+        {
+            float distance = Vector3.Distance(PlayerObject.position, Paywall.position);
+            if (distance < 3.6 && Input.GetKeyDown(KeyCode.E) && Money >= 10000000000000)
+            {
+                for (int i = 3; i > 0; i--)
+                {
+                    Paywall.position += Vector3.up;
+                }
             }
         }
     }
